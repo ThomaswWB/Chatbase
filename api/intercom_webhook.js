@@ -29,7 +29,7 @@ app.post("/intercom-webhook", async (req, res) => {
       },
       {
         headers: {
-          Authorization: "Bearer YOUR_CHATBASE_API_KEY",  // Ganti dengan API key Chatbase kamu
+          Authorization: "Bearer c8e40922-0591-4ec3-91cd-edaf2a6e5dff",  // Ganti dengan API key Chatbase kamu
           "Content-Type": "application/json"
         },
         timeout: 10000  // Timeout 10 detik untuk request
@@ -50,3 +50,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
