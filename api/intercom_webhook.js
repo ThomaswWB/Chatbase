@@ -1,31 +1,52 @@
-import axios from "axios";
+const express = require("express");
+const axios = require("axios");
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
-  }
+const app = express();
+app.use(express.json()); // Memastikan body parser berjalan dengan baik
+
+app.post("/intercom-webhook", async (req, res) => {
+  console.log("Received request:", req.body);  // Log untuk debugging
 
   try {
-    const conversation = req.body.data.item;
+    const conversationId = req.body.data.id;
+    const conversationMessage = req.body.data.conversation_parts.conversation_parts.map(part => `${part.author.type}: ${part.body}`).join("\n");
 
-    const transcript = JSON.stringify(conversation.conversation_parts);
+    // Log data yang akan dikirim ke Chatbase
+    console.log("Sending to Chatbase:", conversationId, conversationMessage);
 
-    await axios.post(
-      "https://www.chatbase.co/api/v1/events",
+    // Kirim ke Chatbase dengan timeout 10 detik
+    const chatbaseResponse = await axios.post(
+      "https://api.chatbase.co/v1/upload",
       {
-        message: transcript,
-        source: "intercom_ticket_closed"
+        conversation_id: conversationId,
+        message: conversationMessage,
+        metadata: {
+          ticket_id: conversationId,
+          source: "intercom",
+          status: req.body.data.status,
+          tags: req.body.data.tags || []
+        }
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.c8e40922-0591-4ec3-91cd-edaf2a6e5dff}`
-        }
+          Authorization: "Bearer YOUR_CHATBASE_API_KEY",  // Ganti dengan API key Chatbase kamu
+          "Content-Type": "application/json"
+        },
+        timeout: 10000  // Timeout 10 detik untuk request
       }
     );
 
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Server Error" });
+    console.log("Chatbase response:", chatbaseResponse.status);  // Log status response dari Chatbase
+
+    res.status(200).send("OK");
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("Internal Server Error");
   }
-}
+});
+
+// Setup server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
